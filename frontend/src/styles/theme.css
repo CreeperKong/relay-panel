@@ -351,3 +351,25 @@ html, body, #root {
     margin-inline-start: 0;
   }
 }
+
+/* The pencil beside a node's label: there to be found, not to draw the eye. A
+   light grey a shade darker than the page, and the usual link colour only when
+   the pointer is on it. */
+.rp-node-label .ant-typography-edit {
+  color: #c2c7cf;
+  font-size: 12px;
+  transition: color 0.15s;
+}
+.rp-node-label .ant-typography-edit:hover,
+.rp-node-label .ant-typography-edit:focus-visible {
+  color: var(--rp-text-tertiary);
+}
+
+/* The box a label turns into while it is edited. antd slides it 12px left so the
+   text inside lines up with the text it replaces; in a table cell that put the
+   box's left edge past the cell's, where the table clips it. It starts at the
+   same edge as the name and the header above it instead. */
+.rp-node-label.ant-typography-edit-content,
+.rp-node-label .ant-typography-edit-content {
+  inset-inline-start: 0 !important;
+}
