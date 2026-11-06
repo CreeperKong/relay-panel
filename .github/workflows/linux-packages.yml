@@ -1,10 +1,16 @@
 name: Linux Packages
+run-name: Linux Packages · version ${{ inputs.version || 'auto' }} · ${{ github.sha }}
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (stable SemVer, for example 1.2.3). Leave empty to derive it from the tag or commit.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -71,12 +77,17 @@ jobs:
         id: version
         env:
           SOURCE_SHA: ${{ github.sha }}
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          RELEASE_TAG="$(git tag --points-at "$SOURCE_SHA" --list 'v[0-9]*' | sort -V | tail -n 1)"
-          if [ -n "$RELEASE_TAG" ]; then
-            VERSION="${RELEASE_TAG#v}"
+          if [ -n "$REQUESTED_VERSION" ]; then
+            VERSION="$REQUESTED_VERSION"
           else
-            VERSION="0.0.0+git.${SOURCE_SHA::12}"
+            RELEASE_TAG="$(git tag --points-at "$SOURCE_SHA" --list 'v[0-9]*' | sort -V | tail -n 1)"
+            if [ -n "$RELEASE_TAG" ]; then
+              VERSION="${RELEASE_TAG#v}"
+            else
+              VERSION="0.0.0+git.${SOURCE_SHA::12}"
+            fi
           fi
           if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(\+[0-9A-Za-z.]+)?$'; then
             echo "::error::release tag must be v<stable-semver>"
