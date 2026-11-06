@@ -10,6 +10,60 @@ independent `v*` / `node-v*` tracks since this release).
 
 ## [Unreleased]
 
+## [1.2.20] - 2026-11-02
+
+Ships alongside `node-v1.2.11`. The config protocol is unchanged at version 4.
+No schema change.
+
+Upgrading: "Update now" on the dashboard, or `git pull --quiet && ./deploy.sh`.
+Used space that matches `df` needs the node on `node-v1.2.11`; everything else
+here is the panel alone.
+
+### Changed
+
+- **The disk list shows disks, not every partition or volume.** On the node
+  status page the disk tooltip and the detail drawer list `/` and any other
+  disk of at least 10 GiB; smaller partitions and the small volumes of a
+  container host are left out. This applies to what nodes already report, so
+  it takes effect with no node upgrade; from `node-v1.2.11` the node also stops
+  sending them.
+- **A group's node list shows each node's address under its name**, small and
+  grey (IPv4, then IPv6 when there is one), so a long list of named machines is
+  still easy to tell apart.
+- **The panel's web page is built with Node.js 26** (the current LTS) instead of
+  Node.js 20, which has reached end of life. Only the build changes; running
+  panels are not affected.
+
+### Fixed
+
+- **A disk's used space no longer includes the space reserved for root** (needs
+  `node-v1.2.11`): an empty disk showed about 5% in use, and deleting
+  data left that much on the page. It now matches `df`. Nodes already running
+  keep reporting the old figure until they are upgraded.
+
+## [1.2.19] - 2026-11-01
+
+Panel only; no node release, and the config protocol is unchanged at version 4.
+No schema change.
+
+Upgrading: "Update now" on the dashboard, or `git pull --quiet && ./deploy.sh`.
+
+### Changed
+
+- **Naming a node moved to the device-group page.** In a group's node list an
+  admin edits the 备注 in place (blank clears it). The node status page no longer
+  has an edit control or an "add label" prompt: it shows the name read-only, in a
+  column that appears only once some node has one, so a panel that names nothing
+  looks exactly as before.
+
+### Fixed
+
+- **A rule dialog that refuses to save now shows why.** When a field on the
+  tab you were not looking at failed its check (create or edit rule), the save
+  button seemed to do nothing and the red text sat on the other tab, so a
+  changed port could only be saved after clicking 转发. The dialog now switches
+  to the tab with the problem and says what it is.
+
 ## [1.2.18] - 2026-10-30
 
 Panel only; no node release, and the config protocol is unchanged at version 4.
