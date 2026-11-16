@@ -10,6 +10,98 @@ independent `v*` / `node-v*` tracks since this release).
 
 ## [Unreleased]
 
+### Changed
+
+- In a device group's latency-monitor drawer each target now fits on one row:
+  the port and the delete button no longer wrap onto a second line.
+- The latency pages (a node's and a device group's) now show a "Recent status"
+  card under the trend chart: per node (group page, for the chosen target) or
+  per target (node page), the current latency and the range's packet loss, each
+  above a strip of 30 colour-coded slices of the selected range, with the
+  slice's time span, mean latency and loss on hover.
+- The latency pages now open on the last 24 hours at hourly granularity
+  (before: the last hour, default granularity), and a 24-hour view re-reads
+  every minute like the shorter ranges. The "Recent status" strips get one slice
+  per data bucket, at most 30, so hourly or 5-minute data no longer leaves grey
+  gaps between slices.
+- Chart lines are easier to tell apart. The dashboard's traffic and node
+  metrics charts and the latency trend charts share one palette of ten distinct
+  colours instead of six: the old set had two greens, and the node metrics
+  chart gave the seventh node the first colour again. The traffic chart now
+  folds lines into "Other" only after ten instead of six. The line charts'
+  legends show filled dots instead of thin strokes, and the lines are slightly
+  thicker.
+- The sidebar's "Device groups" entry has its own icon instead of reusing the
+  "Node status" one.
+- The dashboard's node metrics chart and both latency trend charts now have a
+  "show which lines" picker once they have more than ten lines (a node's
+  targets, a device group's nodes, the dashboard's nodes), instead of reusing
+  colours for the eleventh line onward. Up to ten lines are drawn, each in its
+  own colour. Until you choose, the ten that need attention first are shown:
+  the highest mean of the current metric on the dashboard, the worst latency
+  and loss on the latency pages. At ten lines or fewer nothing changes.
+
+## [1.2.21] - 2026-11-15
+
+Ships alongside `node-v1.2.12`. The config protocol is unchanged at version 4
+(both new fields are optional, so an older node or panel just ignores them).
+
+Schema: three new tables, added automatically on start (SQLite migration 48,
+PostgreSQL revision 31). Targets belong to a device group (`group_id`).
+
+Upgrading: "Update now" on the dashboard, or `git pull --quiet && ./deploy.sh`.
+The latency monitor needs the nodes on `node-v1.2.12`; the other fixes here are
+the panel alone.
+
+### Added
+
+- **Latency monitoring (administrators only).** Nodes can now measure and
+  record their latency and packet loss to targets you choose, over TCP connect
+  time or ICMP ping, and the panel charts it. It is configured **per device
+  group**: the **Latency monitoring** button on each row of the device groups
+  page opens that group's probe interval (5–60 s, default 10) and up to 16
+  targets (name, carrier, TCP or ICMP, host, port), which can be reordered by
+  dragging. Every node of the group probes those targets; a group with none
+  probes nothing, and **there are no built-in targets**. On the node status
+  page, the header of a group that has targets gets a **Monitor** button
+  opening the group's comparison page: a table of every node against every
+  target (average latency and loss over the chosen range, coloured by
+  quality), and below it a trend chart of one target with a line per node
+  (click a column or a cell to switch target; the legend toggles lines). An
+  administrator also sees a small monitor icon beside a node's IP, opening that
+  node's own page: a card per target (current, average and loss over the
+  range, coloured by quality) and a trend chart. Charts support zoom and PNG
+  download, ranges of 1 hour to 30 days and 1-minute, 5-minute or 1-hour
+  granularity. Peaks and lost probes are kept in the hourly roll-up, so the 7-
+  and 30-day views do not smooth them away. Regular users see none of it, and
+  the API refuses them. Deleting a device group deletes its targets and their
+  history.
+  Needs `node-v1.2.12` on the nodes (the pages say so for an older one). The
+  node runs the probes itself, outside forwarding, so they count no traffic and
+  no connections. ICMP is reliable when the node runs as root; in a container
+  without raw-socket permission only TCP targets can be probed, and the page
+  shows "this node cannot do ICMP" rather than reporting loss. Minute data is
+  kept 48 hours and hourly data 30 days; removing a target removes its history.
+
+### Fixed
+
+- **Changing a user's expiry time could put back a plan they had just
+  replaced.** The admin "edit plan" action read the user's current plan and
+  then wrote that plan and the new expiry together. If the user bought another
+  plan in between, the old plan was written back while the traffic allowance,
+  rule count and route access were already the new plan's. Only the expiry is
+  written now, and the plan is left as it is.
+- **A free plan can be claimed only once per user.** Until now the shop let a
+  user buy a price-0 plan (the built-in `free` plan, for one) as many times as
+  they liked, and every purchase stacked another full quota of traffic onto
+  the account (100 GiB each for the default plan). The first purchase works as
+  before; later ones are refused with a message saying a free plan can be
+  claimed once per user, and the shop shows the card as "已领取" (claimed) and
+  disabled. Any earlier order for that plan counts, whatever it cost at the
+  time; the plan a new account gets at registration does not. Paid plans are
+  unchanged, and an admin assigning a plan to a user is not limited. Traffic
+  already stacked through repeated claims is not taken back.
+
 ## [1.2.20] - 2026-11-02
 
 Ships alongside `node-v1.2.11`. The config protocol is unchanged at version 4.

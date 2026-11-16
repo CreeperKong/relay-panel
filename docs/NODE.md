@@ -168,6 +168,7 @@ export them before launching.
 | `OUTBOUND_INTERFACE` | NIC for outbound IPv4 egress; `auto` = system routing (no source bind) | `auto` |
 | `OUTBOUND_BIND_IPV4` | Exact IPv4 source for outbound TCP/UDP; overrides `OUTBOUND_INTERFACE` | (unset) |
 | `UDP_MAX_SESSIONS` | Most concurrent UDP sessions (client addresses) across all rules; new ones beyond it are refused, so forged sources cannot exhaust file descriptors | half the fd limit (32768 under the installer's `LimitNOFILE=65536`) |
+| `UDP_MAX_SESSIONS_PER_IP` | Most concurrent UDP sessions one source address may hold across all rules (an IPv6 source counts per /64, an IPv4-mapped IPv6 address as its IPv4 address); new ones beyond it are refused, so one machine cannot fill `UDP_MAX_SESSIONS` or exhaust memory. Raise it if many real clients share one address (NAT) | `1024` |
 | `RUST_LOG` | Log level: `error` / `warn` / `info` / `debug` | `info` |
 
 Notes:
@@ -269,6 +270,21 @@ server {
 ```
 
 All three accept both v1 and v2; v2 is binary and a little smaller. The panel checks the node versions in the rule's inbound group and refuses to turn it on while any node there is older than 1.2.9 (an older node ignores the setting, which breaks every connection).
+
+---
+
+## Latency monitoring (what the node probes)
+
+An administrator can list up to 16 targets for each device group in the panel, from the **Latency monitoring** button on the device groups page. Needs node-v1.2.12 or later. With **no targets configured for its device group the node probes nothing**; there is no built-in target list.
+
+Once its group has targets, **every node of that group** actively connects to each of them, once per interval (default every 10 seconds, 5–60 configurable), and records how long it took and whether it answered:
+
+- **TCP**: opens a connection to the target's host and port and closes it as soon as the handshake completes. Nothing is sent. The time taken is the latency.
+- **ICMP**: one echo request (ping) to the target, 3 seconds to answer.
+
+At most 8 probes run at once and a probe that is not answered within 3 seconds counts as lost. Probes are made by the node itself, outside forwarding: they belong to no rule, count no traffic and no connections, and are not rate-limited. Domain names are resolved at most every 10 minutes (IPv4 first); a name that does not resolve counts as lost. The node sums each finished minute up and sends it with its normal status report. The target can see these connection attempts, so list only hosts you are happy to have probed.
+
+ICMP needs a socket the operating system may refuse. The node first asks for an unprivileged ping socket, then a raw socket. **Run as root (the installer's systemd unit does) and ICMP works**; in a container, add `NET_RAW` or set `net.ipv4.ping_group_range`, otherwise only TCP targets can be probed. A node that can open neither reports its ICMP targets as "not supported", and the panel shows that on the node's latency page instead of counting it as packet loss.
 
 ## Verify it's working
 
